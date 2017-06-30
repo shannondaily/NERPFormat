@@ -1,63 +1,96 @@
 import java.util.ArrayList;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 public class Allied implements Vendor{
-    private ArrayList<String> shortText;
-    private ArrayList<Integer> quantity;
-    private ArrayList<Double> valuationPrice;
-    public Allied(){
-        shortText=new ArrayList();
-        quantity=new ArrayList();
-        valuationPrice=new ArrayList();
+    private ArrayList[] data;
+    //First Number what column it is located, second what column it should go to
+    private final int[][] location={{4,4},{6,5},{7,6}};
+    public ArrayList[] getData(){
+        return data;
     }
-    public ArrayList<String> getShortText(){
-        return shortText;
-    }
-    public ArrayList<Integer> getQuantity(){
-        return quantity;
-    }
-    public ArrayList<Double> getValuationPrice(){
-        return valuationPrice;
+    public int[][] getLocation(){
+        return location;
     }
     public void extractData(String fileName){
-        String line;
         try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            int x=1;
+            String line = br.readLine();
+            String[] row = line.split(",");
+            data=new ArrayList[row.length];
+            for(int i=0;i<data.length;i++){
+                data[i]=new ArrayList();
+            }
+            int j;
             while ((line = br.readLine()) != null) {
-                String[] row = line.split(",");
-                if(x!=1&&row[0].length()>0){
-                    if(((String)row[4]).charAt(0)=='"'){
-                        int i=5;
-                        String temp=row[4];
+                row = line.split(",");
+                j=0;
+                for(int i=0;i<row.length&&((String)row[0]).length()>0;i++){
+                    if(((String)row[i]).length()==0){
+                        data[j].add("");
+                    }
+                    else if(((String)row[i]).charAt(0)=='"'){
+                        String temp=row[i];
                         while(temp.charAt(temp.length()-1)!='"'){
-                            temp+=","+row[i];
-                            i++;
+                            temp+=","+row[++i];
                         }
-                        shortText.add(temp);
-                        quantity.add(Integer.parseInt(row[i+1]));
-                        temp=row[i+2];
-                        String temp2="";
-                        for(int j=2;j<temp.length()-1;j++){
-                            temp2+=temp.charAt(j);
-                        }
-                        valuationPrice.add(Double.parseDouble(temp2));
+                        data[j].add(temp);
                     }
                     else{
-                        shortText.add((String)row[4]);
-                        String temp=row[6];
-                        String temp2="";
-                        for(int j=2;j<temp.length()-1;j++){
-                            temp2+=temp.charAt(j);
-                        }
-                        valuationPrice.add(Double.parseDouble(temp2));
-                        valuationPrice.add(Double.parseDouble(row[7]));
-                    } 
+                        data[j].add(row[i]);
+                    }
+                    j++;
                 }
-                x++;
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    public void createFile(String fileName){
+        FileWriter writer = null;
+        try(BufferedReader br = new BufferedReader(new FileReader("headers.txt"))) {
+            String line= br.readLine();
+            String[] row = line.split(",");
+            writer = new FileWriter(fileName);
+            writer.append(line);
+            writer.append('\n');
+            
+            
+            Object[][] spreadSheet=new Object[row.length][data[0].size()];
+            for(int i=0;i<spreadSheet.length;i++){
+                for(int j=0;j<spreadSheet[i].length;j++){
+                    spreadSheet[i][j]="";
+                }
+            }
+            for (int[] pair : location){
+                int currentPosition=pair[0];
+                int destination=pair[1];
+                for(int i=0;i<spreadSheet.length;i++){
+                    if(i==destination){
+                        for(int j=0;j<spreadSheet[i].length;j++){
+                            spreadSheet[destination][j]=data[currentPosition].get(j);
+                        }
+                    }
+                }
+            }
+            for(int j=0;j<spreadSheet[0].length;j++){
+                for(int i=0;i<spreadSheet.length;i++){
+                    writer.append((String)spreadSheet[i][j]);
+                    writer.append(",");
+                }
+                writer.append('\n');
+            }
+         } 
+        catch (IOException e) {
+            e.printStackTrace();
+        } 
+        finally {
+            try {
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
