@@ -20,6 +20,10 @@ public class McMaster
 		ArrayList<String> rawTextList = new ArrayList<String>();
 		ArrayList<String> separatedTextList = new ArrayList<String>();
 		
+		//McMaster tableview doesn't include headers. I need to add the headers to the CSV file prior
+		//to anything else, because my program searches for the data by the header.
+		rawTextList.add("Line,Quantity,Unit of Measure,Product,Description,Ships,Unit Price,Total");
+		
 		//Add each line of the CSV file to a new element of the ArrayList.
 		BufferedReader reader = null;
 		try {
@@ -51,7 +55,6 @@ public class McMaster
 		
 		//Initialize the size of vendorSpreadSheet.
 		vendorSpreadSheet = new String [numberOfRows][numberOfColumns];
-		//NERPSpreadSheet = new String [numberOfRows][numberOfColumns];
 		
 		//Fill 2D array to avoid null pointer exception
 		for(int n = 0; n < vendorSpreadSheet.length; n++)
@@ -115,8 +118,8 @@ public class McMaster
 	{
 		//Variables
 		int cIndex;
-		String quantityString = "Qty";
-		String partDescriptionString = "Manufacturer / Description";
+		String quantityString = "Quantity";
+		String partDescriptionString = "Description";
 		
 		String NERPQuantityString = "Quantity";
 		String NERPPartDescriptionString = "Short Text";
@@ -124,6 +127,8 @@ public class McMaster
 		ArrayList<String> qtyData = new ArrayList<>();
 		ArrayList<String> partDescription = new ArrayList<>();
 		
+
+//Putting data in the right columns, just not getting the correct data.
 		
 		//Grab the items needed from spreadSheet: ShortText and Qty
 		//Get index of and store data for quantity
