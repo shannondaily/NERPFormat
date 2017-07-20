@@ -15,7 +15,8 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 public final class Main extends Application {
-
+    
+    //Variables that will be changed by the methods and need to be outside of them
     final ComboBox[] vendorDropdown = new ComboBox[5];
     String[] originalFilePath = new String[5];
     String[] originalFileName = new String[5];
@@ -26,19 +27,25 @@ public final class Main extends Application {
     int counter = 0;
 
     @Override
+    //Method to launch GUI
     public void start(final Stage stage) {
-
+        
+        //Create the stage, set the title and eliminate the maximize button
         stage.setTitle("NERP Format");
         stage.resizableProperty().setValue(Boolean.FALSE);
-
+        
+        //Create the text that will display the file name, initialize to "Select File" and make it Bold
         Text[] fileDisplay = new Text[5];
         for (int i = 0; i < 5; i++) {
             fileDisplay[i] = new Text("Select File");
             fileDisplay[i].setFont(Font.font("Verdana", FontWeight.BOLD, 10));
         }
+        
+        //Create the text above the vendor selector and make it bold
         Text selectVendor = new Text("  Select Vendor");
         selectVendor.setFont(Font.font("Verdana", FontWeight.BOLD, 10));
-
+        
+        //Inititialize each of the vendor selectors, add the vendors and a mathod to read which vendor is selected
         for (int i = 0; i < 5; i++) {
             vendorDropdown[i] = new ComboBox();
             vendorDropdown[i].getItems().addAll("Allied", "DigiKey", "McMaster", "Newark");
@@ -50,13 +57,16 @@ public final class Main extends Application {
                 }
             });
         }
-
+        
+        //Create the fileChoosers and their respective butttons
         final FileChooser[] fileChooser = new FileChooser[5];
         final Button[] openButton = new Button[5];
-
+        
+        //Initialize each file chooser and button, call methods to change the displayed text to the file name,
+        //save the file name and path, resize the window and automatically select the right vendor
         for (int i = 0; i < 5; i++) {
             fileChooser[i] = new FileChooser();
-            openButton[i] = new Button("Select File");
+            openButton[i] = new Button("Add File");
             final FileChooser tempFileChooser = fileChooser[i];
             final Text tempText = fileDisplay[i];
             final Button tempButton = openButton[i];
@@ -73,10 +83,15 @@ public final class Main extends Application {
                 }
             });
         }
-
+        
+        //Create the convert files button and a directory chooser to choose destination
         final Button convertFile = new Button("Convert Files");
         final DirectoryChooser directoryChooser = new DirectoryChooser();
-
+        
+        //Go trough each option and check to see if each file and vendor are selected
+        //and the correct format is selected, if true then select directory for file to go,
+        //use it to create the new file name and create the new file
+         //print success message
         convertFile.setOnAction((final ActionEvent e) -> {
             boolean flag = true;
             for (int i = 0; i <= counter && flag; i++) {
@@ -108,10 +123,15 @@ public final class Main extends Application {
                 }
             }
         });
-
+        
+        //Create the combine files button and a directory chooser to choose destinatin of file
         final Button combineFiles = new Button("Combine Files");
         final DirectoryChooser directoryChooserCombined = new DirectoryChooser();
-
+        
+        //Go trough each option and check to see if each file and vendor are selected
+        //and the correct format is selected, if true then select directory for file to go,
+        //use it to create the new file name and create the new file using each individual file
+        //print success message
         combineFiles.setOnAction((final ActionEvent e) -> {
             boolean flag = true;
             for (int i = 0; i <= counter && flag; i++) {
@@ -121,6 +141,9 @@ public final class Main extends Application {
                 } else if (selectedVendor[i] == null) {
                     flag = false;
                     openModal(stage, "Please select vendor for option " + (i + 1));
+                } else if (wrongFormat[i]) {
+                    flag = false;
+                    openModal(stage, "File for option " + (i + 1) + " is not formatted correctly");
                 }
             }
             if (flag) {
@@ -139,10 +162,12 @@ public final class Main extends Application {
                 }
             }
         });
-
-        final Button addOption = new Button("Add new file");
-        final Button removeOption = new Button("Remove file");
-
+        
+        //Create buttons to add more ooptions and remove options
+        final Button addOption = new Button("Add More Files");
+        final Button removeOption = new Button("Remove Files");
+        
+        //Create gridpane and add all the elements
         final GridPane inputGridPane = new GridPane();
 
         GridPane.setConstraints(selectVendor, 2, 2);
@@ -155,15 +180,18 @@ public final class Main extends Application {
             GridPane.setConstraints(openButton[i], 1, i + 3);
             GridPane.setConstraints(vendorDropdown[i], 2, i + 3);
         }
-
+        //Set the vertical and horizontal gaps andd the elements
         inputGridPane.setHgap(8);
         inputGridPane.setVgap(8);
         inputGridPane.getChildren().addAll(selectVendor, convertFile, addOption, removeOption, fileDisplay[0], openButton[0], vendorDropdown[0]);
-
+        
+        //Set padding
         final Pane rootGroup = new VBox(12);
         rootGroup.getChildren().addAll(inputGridPane);
         rootGroup.setPadding(new Insets(60, 90, 60, 90));
-
+        
+        //For add option add another option if there is still room and if it is big enough add combine
+        //files button
         addOption.setOnAction((final ActionEvent e) -> {
             if (counter < 4) {
                 counter++;
@@ -175,7 +203,8 @@ public final class Main extends Application {
                 stage.sizeToScene();
             }
         });
-
+        
+        //Remove options if there are extra and remove combine files if not enough files
         removeOption.setOnAction((final ActionEvent e) -> {
             if (counter > 0) {
                 inputGridPane.getChildren().remove(fileDisplay[counter]);
@@ -193,24 +222,28 @@ public final class Main extends Application {
         stage.setScene(new Scene(rootGroup));
         stage.show();
     }
-
+    
+    //This method gets the original file name and displays it and stores its path
     public void getOriginalFileName(File file, int index, Text text) {
         originalFilePath[index] = file.getPath();
         originalFileName[index] = file.getName();
         text.setText(originalFileName[index]);
     }
-
+    
+    //This method changes the selected vendor accoring to what is selected in the dropdown menu
     public void selectVendor(ObservableValue<? extends String> observable, String oldValue, String newValue, int index) {
         selectedVendor[index] = newValue;
     }
-
+    
+    //This method creates the new file name by using the path of the selected directory and a time stamp
     public void getNewFileName(File directory, int index) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.hh.mm.ss");
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         newFileFolder[index] = directory.getPath();
         newFileName[index] = newFileFolder[index] + "/NERP-FORMAT-" + sdf.format(timestamp) + index + ".csv";
     }
-
+    
+    //This method selects the proper vendor and creates the file
     public void createFile(int index) {
         if (selectedVendor[index].equals("DigiKey")) {
             DigiKey digiKey = new DigiKey();
@@ -225,10 +258,13 @@ public final class Main extends Application {
             newark.extractData(originalFilePath[index]);
             newark.createFile(newFileName[index]);
         } else if (selectedVendor[index].equals("McMaster")) {
-
+            McMaster mcMaster = new McMaster();
+            mcMaster.extractData(originalFilePath[index]);
+            mcMaster.createFile(newFileName[index]);
         }
     }
-
+    
+    //This method opens a modal and dysplays text
     public void openModal(Stage stage, String message) {
         final Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
@@ -250,7 +286,10 @@ public final class Main extends Application {
         dialog.setScene(new Scene(rootGroup));
         dialog.show();
     }
-
+    
+    //This method detects the correct vendor, if string not found on first line search for it,
+    //at bottom of file for mcmaster files, if format not found dysplay an error message and 
+    //set the value of wrog format ot true
     public void findVendor(File file, int index, Stage stage) {
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String digiKeyHeader = "IndexQuantityPartNumberDescriptionCustomerReferenceAvailable"
@@ -291,7 +330,9 @@ public final class Main extends Application {
         } catch (IOException e) {
         }
     }
-
+    
+    //This method combines the files by opening each one and then copying its text into new file
+    //then delete the read files
     public void combineFiles() {
         FileWriter writer = null;
         try {
@@ -320,7 +361,8 @@ public final class Main extends Application {
             }
         }
     }
-
+    
+    //Main method call mehtod that launches the gui
     public static void main(String[] args) {
         Application.launch(args);
     }
