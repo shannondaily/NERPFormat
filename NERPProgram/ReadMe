@@ -1,0 +1,20 @@
+NERP Format
+------------
+------------
+
+This program converts csv files from Allied,Newark,McMaster Carr and DigiKey into properly formatted NERP files
+
+How to use
+Select file
+Select vendor if not recognized by the program
+Click on create files
+
+Features
+------------
+Can guess which vendor the file is chosen from
+Can convert multiple files at the same time
+Can convert and combine files into a single properly formated file
+
+To run project open folder and select the CSV Files JAR File.
+
+Do not remove the lib folder
