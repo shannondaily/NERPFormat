@@ -1,6 +1,9 @@
 
 import java.util.ArrayList;
 import java.io.*;
+import java.math.BigDecimal;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.*;
 
 public class DigiKey implements Vendor {
 
@@ -8,10 +11,10 @@ public class DigiKey implements Vendor {
     private ArrayList[] data;
 
     //This instance variable is where the column of information is located in the
-    //Original file and where it should go
-    //First Number what column it is located, second what column it should go to
-    //Initialized at zero
-    private final int[][] location = {{3, 4}, {1, 5}};
+    //Original file initialized at zero
+    private final int priceCol = 7;
+    private final int descriptionCol = 3;
+    private final int quantityCol = 1;
 
     //This method goes through the CSV file being read and stores the cells in to the
     //Instance varaiable data
@@ -46,11 +49,11 @@ public class DigiKey implements Vendor {
                         while (temp.charAt(temp.length() - 1) != '"') {
                             temp += "," + row[++i];
                         }
-                        temp = temp.replaceAll("[^A-Za-z0-9 .,;:_/\"-]", "");
+                        temp = temp.replaceAll("[^A-Za-z0-9 .]", "");
                         data[j].add(temp);
                     } //If not a special case add it to data
                     else {
-                        String temp = row[i].replaceAll("[^A-Za-z0-9 .,;:_/\"-]", "");
+                        String temp = row[i].replaceAll("[^A-Za-z0-9 .]", "");
                         data[j].add(temp);
                     }
                     j++;
@@ -60,66 +63,68 @@ public class DigiKey implements Vendor {
         } catch (IOException e) {
         }
     }
-
-    //This method creates the output csv file
-    public void createFile(String fileName) {
-        FileWriter writer = null;
+    //This method creates the output xls file
+    @Override
+    public void createFile(String fileName, String docType, String account, String uom, String date, String requesitioner, String trackNum, String desVendor, String network, String activity, String creditCard, String wbs, String glAccount, String material){
         try {
-            //Add headers to the file
-            String line = "Doc Type,Account Assignment,Item Category,Material,"
-                    + "Short Text,Quantity,UoM,Delivery Date,Material Group,"
-                    + "Plant,Porg,Purchasing Group,Requisitioner,Req. Tracking "
-                    + "Number,Desired Vendor,Fixed Vendor,Valuation Price,G/L "
-                    + "Account,Cost Center,WBS Element,Network,Activity,Fiscal Y"
-                    + "ear,Fund Code,Functional Area,Funds Center,Earmarked Funds,"
-                    + "Earmarked Funds Line item,DODAAC,Standard Document Number,"
-                    + "Credit Card Number,ACRN,Project Code,Instrument Type";
-            String[] row = line.split(",");
-            writer = new FileWriter(fileName);
-            writer.append(line);
-            writer.append('\n');
-
-            //Create 2d array to represent each cell of new csv file
-            Object[][] spreadSheet = new Object[row.length][data[0].size()];
-            //Initialize each element to a blank string
-            for (int i = 0; i < spreadSheet.length; i++) {
-                for (int j = 0; j < spreadSheet[i].length; j++) {
-                    spreadSheet[i][j] = "";
-                }
-            }
-
-            //Write each colum where it should go
-            //Loop through each pair of positions
-            for (int[] pair : location) {
-                //Extract each position and store it in int
-                int currentPosition = pair[0];
-                int destination = pair[1];
-                //Loop through the spreadsheet 2d array
-                for (int i = 0; i < spreadSheet.length; i++) {
-                    //If the columns match write into the array
-                    if (i == destination) {
-                        for (int j = 0; j < spreadSheet[i].length; j++) {
-                            spreadSheet[destination][j] = data[currentPosition].get(j);
-                        }
+            //Open template file to modify
+            FileInputStream excelFile = new FileInputStream(new File("lib/template.xls"));
+            Workbook workbook = new HSSFWorkbook(excelFile);
+            Sheet sheet = workbook.getSheetAt(0);
+            int rowNum = 1;
+            
+            //Go through each row and add the values to each cell
+            for(int i = 0; i < data[0].size(); i++){
+                Row row = sheet.getRow(rowNum++);
+                Cell[] cell = new Cell[34];
+                for(int j = 0; j < cell.length; j++){
+                    cell[j] = row.getCell(j);
+                    //If there is a cell that has not been initialized copy the formatting of the avobe cell
+                    if(cell[j] == null){
+                        Row tempRow = sheet.getRow(rowNum - 2);
+                        Cell tempCell = tempRow.getCell(j);
+                        CellStyle tempCellStyle = tempCell.getCellStyle();
+                        cell[j] = row.createCell(j);
+                        cell[j].setCellStyle(tempCellStyle);
                     }
                 }
-            }
-
-            //Write into the csv file going through columns first
-            for (int j = 0; j < spreadSheet[0].length; j++) {
-                for (int i = 0; i < spreadSheet.length; i++) {
-                    writer.append((String) spreadSheet[i][j]);
-                    writer.append(",");
+                cell[0].setCellValue(docType);
+                cell[1].setCellValue(account);
+                cell[3].setCellValue(material);
+                cell[4].setCellValue(((String) data[descriptionCol].get(i)).toUpperCase());
+                cell[5].setCellValue(Double.parseDouble((String) data[quantityCol].get(i)));
+                cell[6].setCellValue(uom);
+                cell[7].setCellValue(date);
+                cell[9].setCellValue("WC17");
+                cell[10].setCellValue(1700);
+                cell[11].setCellValue("NHC");
+                cell[12].setCellValue(requesitioner);
+                cell[13].setCellValue(trackNum);
+                //If no desired vendor typed skip
+                if (desVendor != null) {
+                    cell[14].setCellValue(new BigDecimal(desVendor).doubleValue());
                 }
-                writer.append('\n');
+                cell[16].setCellValue(Double.parseDouble((String) data[priceCol].get(i)));
+                cell[17].setCellValue(glAccount);
+                cell[19].setCellValue(wbs);
+                //If not network typed skip
+                if (network != null) {
+                    cell[20].setCellValue(new BigDecimal(network).doubleValue());
+                }
+                cell[21].setCellValue(activity);
+                cell[30].setCellValue(creditCard);
             }
+            
+            excelFile.close();
+            
+            //Create the output file
+            FileOutputStream outputStream = new FileOutputStream(new File(fileName));
+            workbook.write(outputStream);
+            outputStream.close();
+        } catch (FileNotFoundException e) {
+            
         } catch (IOException e) {
-        } finally {
-            try {
-                writer.flush();
-                writer.close();
-            } catch (IOException e) {
-            }
+            
         }
     }
 }
